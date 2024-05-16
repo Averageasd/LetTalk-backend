@@ -2,6 +2,7 @@ const {Server} = require("socket.io");
 const UserModel = require('../model/User');
 const RoomModel = require('../model/Room');
 const Message = require('../model/Mesage');
+const Invitation = require('../model/Invitation');
 
 class IOSingleton {
 
