@@ -1,0 +1,60 @@
+const {Server} = require("socket.io");
+const UserModel = require('../model/User');
+const RoomModel = require('../model/Room');
+const Message = require('../model/Mesage');
+
+class IOSingleton {
+
+    static IOInstance = null;
+
+    static getIOInstance(httpServer) {
+        if (IOSingleton.IOInstance === null) {
+            IOSingleton.IOInstance = new Server(httpServer, {
+                cors: {
+                    origin: '*',
+                    credentials: true
+                }
+            });
+        }
+
+        IOSingleton.IOInstance.on('connection', (socket) => {
+            console.log('hello user');
+            socket.on('join-rooms', async (userId) => {
+                const curUser = await UserModel.findById(userId).exec();
+                socket.rooms.clear();
+                socket.join(curUser._id.toString());
+                for (const room of curUser.rooms) {
+                    socket.join(room.toString());
+                }
+            });
+
+            socket.on('message', async (userId, message, roomId) => {
+                console.log('message from client ', message);
+                const newMessage = new Message({
+                    message: message,
+                    date: new Date(),
+                    status: 'CREATE',
+                    user: userId,
+                    room: roomId,
+                });
+                await newMessage.save();
+                const room = await RoomModel.findById(roomId).exec();
+                console.log(room);
+                await RoomModel.findByIdAndUpdate(roomId, {
+                    messages: room.messages.concat(newMessage._id)
+                });
+                IOSingleton.IOInstance.to(roomId).emit('message', userId, message, roomId);
+            });
+
+            socket.on('send-connect-request', async (from, to) => {
+                console.log('invitation from ', from, ' to ', to);
+            });
+
+
+        });
+        return IOSingleton.IOInstance;
+    }
+}
+
+
+module.exports = IOSingleton;
