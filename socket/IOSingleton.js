@@ -31,7 +31,6 @@ class IOSingleton {
             });
 
             socket.on('message', async (userId, message, roomId) => {
-                console.log('message from client ', message);
                 const newMessage = new Message({
                     message: message,
                     date: new Date(),
@@ -62,10 +61,24 @@ class IOSingleton {
                     to: to,
                     room: newRoom._id,
                 })
-
                 await newInvitation.save();
-                console.log(newInvitation);
-                console.log('invitation from ', from, ' to ', to);
+            });
+
+            socket.on('connection-request-response', async (userId, accept, invitationId) => {
+                console.log('yo');
+                if (accept) {
+                    const invitation = await Invitation.findByIdAndUpdate(invitationId, {
+                        'status': 'ACCEPTED'
+                    }, {new: true}).exec();
+
+                    const room = await RoomModel.findById(invitation.room).exec();
+                    const updatedRoomWithNewUsers = [...room.users];
+                    updatedRoomWithNewUsers.push(invitation.from);
+                    updatedRoomWithNewUsers.push(invitation.to);
+                    await RoomModel.findByIdAndUpdate(room._id, {
+                        'users': updatedRoomWithNewUsers
+                    }).exec();
+                }
             });
 
 
