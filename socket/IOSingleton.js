@@ -3,6 +3,7 @@ const UserModel = require('../model/User');
 const RoomModel = require('../model/Room');
 const Message = require('../model/Mesage');
 const Invitation = require('../model/Invitation');
+const mongoose = require("mongoose");
 
 class IOSingleton {
 
@@ -48,6 +49,22 @@ class IOSingleton {
             });
 
             socket.on('send-connect-request', async (from, to) => {
+                const newRoom = new RoomModel({
+                    roomType: 'DIRECT-MESSAGE',
+                    users: [],
+                    messages: [],
+                })
+
+                await newRoom.save();
+                const newInvitation = new Invitation({
+                    status: 'PENDING',
+                    from: from,
+                    to: to,
+                    room: newRoom._id,
+                })
+
+                await newInvitation.save();
+                console.log(newInvitation);
                 console.log('invitation from ', from, ' to ', to);
             });
 
