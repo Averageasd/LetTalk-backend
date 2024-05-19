@@ -4,6 +4,7 @@ const RoomModel = require('../model/Room');
 const Message = require('../model/Mesage');
 const Invitation = require('../model/Invitation');
 const mongoose = require("mongoose");
+const {ObjectId} = require("mongodb");
 
 class IOSingleton {
 
@@ -40,7 +41,6 @@ class IOSingleton {
                 });
                 await newMessage.save();
                 const room = await RoomModel.findById(roomId).exec();
-                console.log(room);
                 await RoomModel.findByIdAndUpdate(roomId, {
                     messages: room.messages.concat(newMessage._id)
                 });
@@ -53,8 +53,6 @@ class IOSingleton {
                     users: [],
                     messages: [],
                 })
-
-                console.log(newRoom);
                 await newRoom.save();
                 const newInvitation = new Invitation({
                     status: 'PENDING',
@@ -67,7 +65,6 @@ class IOSingleton {
             });
 
             socket.on('connection-request-response', async (userId, toUserId, accept, invitationId) => {
-                console.log('yo');
                 if (accept) {
                     const invitation = await Invitation.findByIdAndUpdate(invitationId, {
                         'status': 'ACCEPTED'
@@ -94,6 +91,20 @@ class IOSingleton {
                 IOSingleton.IOInstance.emit('connection-request-response', userId, toUserId, accept, invitationId);
             });
 
+            socket.on('delete-message', async (messageId, roomId) => {
+                const room = await RoomModel.findById(roomId).exec();
+                await Message.findByIdAndDelete(messageId).exec();
+                const roomMessages = [...room.messages].map((id) => id.toString());
+                console.log('room messages of message we want to delete ', messageId, roomMessages);
+                const indexDeleteMessage = roomMessages.indexOf(messageId.toString());
+                console.log('index of Delete Message ', messageId, ' is ', indexDeleteMessage);
+                roomMessages.splice(indexDeleteMessage, 1);
+                console.log('room messages after delete ', messageId, ' is  ', roomMessages);
+                await RoomModel.findByIdAndUpdate(roomId, {
+                    messages: roomMessages
+                }).exec();
+                IOSingleton.IOInstance.to(roomId).emit('delete-message', messageId, roomId);
+            });
         });
         return IOSingleton.IOInstance;
     }
