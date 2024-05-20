@@ -27,4 +27,30 @@ router.get('/all-invitations/:userId', async function (req, res, next) {
     }
 });
 
+router.post('/create-room/:roomName/user/:userId', async function (req, res, next) {
+    try {
+        const roomWithName = await RoomModel.findOne({name: req.params.roomName}).exec();
+        if (roomWithName) {
+            res.status(403).json({status: 403, message: 'name already exists'});
+            return;
+        }
+        const newRoom = new RoomModel({
+            name: req.params.roomName,
+            roomType: 'MULTIUSER',
+            users: [user._id],
+            messages: [],
+        });
+        await newRoom.save();
+
+        const user = await UserModel.findById(userId).exec();
+        await UserModel.findByIdAndUpdate(req.params.userId, {
+            rooms: user.rooms.concat(newRoom._id),
+        }).exec();
+
+        res.status(200).json({status: 200, message: `room ${newRoom.name} created`});
+    } catch (e) {
+
+    }
+});
+
 module.exports = router;

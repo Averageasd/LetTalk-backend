@@ -133,7 +133,7 @@ class IOSingleton {
                 }).exec();
 
                 IOSingleton.IOInstance.to(roomId).emit('remove-edit-status', messageId, roomId, userId);
-            })
+            });
         });
         return IOSingleton.IOInstance;
     }
