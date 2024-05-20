@@ -36,6 +36,7 @@ class IOSingleton {
                     message: message,
                     date: new Date(),
                     status: 'CREATE',
+                    isEditing: false,
                     user: userId,
                     room: roomId,
                 });
@@ -105,6 +106,34 @@ class IOSingleton {
                 }).exec();
                 IOSingleton.IOInstance.to(roomId).emit('delete-message', messageId, roomId);
             });
+
+            socket.on('change-message-to-edit', async (messageId, roomId, userId) => {
+                await Message.findByIdAndUpdate(messageId, {
+                    isEditing: true,
+                }).exec();
+
+                IOSingleton.IOInstance.to(roomId).emit('change-message-to-edit', messageId, roomId, userId);
+            });
+
+            socket.on('edit-message', async (newMessage, messageId, roomId, userId) => {
+                await Message.findByIdAndUpdate(messageId, {
+                    isEditing: false,
+                    status: 'EDIT',
+                    date: new Date(),
+                    message: newMessage,
+                }).exec();
+
+                IOSingleton.IOInstance.to(roomId).emit('edit-message', newMessage, messageId, roomId, userId);
+            });
+
+            socket.on('remove-edit-status', async (messageId, roomId, userId) => {
+                await Message.findByIdAndUpdate(messageId, {
+                    isEditing: false,
+                    status: 'CREATE',
+                }).exec();
+
+                IOSingleton.IOInstance.to(roomId).emit('remove-edit-status', messageId, roomId, userId);
+            })
         });
         return IOSingleton.IOInstance;
     }

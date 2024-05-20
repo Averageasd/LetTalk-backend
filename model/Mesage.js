@@ -8,9 +8,10 @@ const MessageSchema = new Schema(
         status: {
             type: String,
             require: true,
-            enum: ['CREATE', 'EDIT','DELETE'],
+            enum: ['CREATE', 'EDIT', 'DELETE'],
             default: 'CREATE'
         },
+        isEditing: {type: Boolean, default: false, require: true},
         user: {type: Schema.Types.ObjectId, ref: 'user'},
         room: {type: Schema.Types.ObjectId, ref: 'room'},
     }
