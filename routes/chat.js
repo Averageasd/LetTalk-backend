@@ -27,23 +27,24 @@ router.get('/all-invitations/:userId', async function (req, res, next) {
     }
 });
 
-router.post('/create-room/:roomName/user/:userId', async function (req, res, next) {
+router.post('/create-room/', async function (req, res, next) {
     try {
-        const roomWithName = await RoomModel.findOne({name: req.params.roomName}).exec();
+        const roomWithName = await RoomModel.findOne({name: req.body.roomName}).exec();
+        console.log(roomWithName);
         if (roomWithName) {
-            res.status(403).json({status: 403, message: 'name already exists'});
+            res.status(403).json({status: 403, message: `room with name ${req.body.roomName} already exists`});
             return;
         }
+
+        const user = await UserModel.findById(req.body.userId).exec();
         const newRoom = new RoomModel({
-            name: req.params.roomName,
+            name: req.body.roomName,
             roomType: 'MULTIUSER',
             users: [user._id],
             messages: [],
         });
         await newRoom.save();
-
-        const user = await UserModel.findById(userId).exec();
-        await UserModel.findByIdAndUpdate(req.params.userId, {
+        await UserModel.findByIdAndUpdate(req.body.userId, {
             rooms: user.rooms.concat(newRoom._id),
         }).exec();
 
