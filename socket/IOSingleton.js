@@ -96,11 +96,8 @@ class IOSingleton {
                 const room = await RoomModel.findById(roomId).exec();
                 await Message.findByIdAndDelete(messageId).exec();
                 const roomMessages = [...room.messages].map((id) => id.toString());
-                console.log('room messages of message we want to delete ', messageId, roomMessages);
                 const indexDeleteMessage = roomMessages.indexOf(messageId.toString());
-                console.log('index of Delete Message ', messageId, ' is ', indexDeleteMessage);
                 roomMessages.splice(indexDeleteMessage, 1);
-                console.log('room messages after delete ', messageId, ' is  ', roomMessages);
                 await RoomModel.findByIdAndUpdate(roomId, {
                     messages: roomMessages
                 }).exec();
@@ -108,22 +105,16 @@ class IOSingleton {
             });
 
             socket.on('change-message-to-edit', async (messageId, roomId, userId) => {
-                console.log('message id of editing message', messageId, typeof (messageId));
                 await Message.findByIdAndUpdate(messageId, {
                     isEditing: true,
                 }).exec();
                 const room = await RoomModel.findById(roomId).populate({path: 'messages'}).exec();
                 const roomMessages = [...room.messages];
-                console.log(roomMessages);
                 for (const message of roomMessages) {
-                    console.log(message._id);
-                    console.log(message._id.toString() === messageId);
                     if (message._id.toString() !== messageId && message.isEditing) {
-                        console.log('message is no longer edited', message);
                         await Message.findByIdAndUpdate(message._id, {
                             isEditing: false
                         }).exec();
-                        console.log('updated finish');
                     }
                 }
                 IOSingleton.IOInstance.to(roomId).emit('change-message-to-edit', messageId, roomId, userId);
