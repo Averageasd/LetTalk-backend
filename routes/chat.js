@@ -54,4 +54,10 @@ router.post('/create-room/', async function (req, res, next) {
     }
 });
 
+router.get('/all-friends/:userId', async function (req, res, next) {
+    const user = await UserModel.findById(req.params.userId).populate('connections').exec();
+    res.status(200).json({status: 200, allFriends: user.connections});
+
+});
+
 module.exports = router;
