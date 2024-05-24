@@ -73,8 +73,28 @@ class IOSingleton {
                     room: roomId,
                 })
                 await newInvitation.save();
-                IOSingleton.IOInstance.emit('send-connect-request', from, to);
+                IOSingleton.IOInstance.emit('send-invitation-request', from, to, roomId);
+            });
+
+            socket.on('invitation-request-response', async (from, to, accept, invitationId) => {
+                if (accept) {
+                    const invitation = await Invitation.findByIdAndUpdate(invitationId, {
+                        'status': 'ACCEPTED'
+                    }, {new: true}).exec();
+                    const room = await RoomModel.findById(invitation.room).exec();
+                    const updatedRoomWithNewUsers = [...room.users];
+                    updatedRoomWithNewUsers.push(invitation.to);
+                    await RoomModel.findByIdAndUpdate(room._id, {
+                        'users': updatedRoomWithNewUsers
+                    }).exec();
+                    const requestReceiver = await UserModel.findById(from).exec();
+                    await UserModel.findByIdAndUpdate(from, {
+                        rooms: requestReceiver.rooms.concat(room._id),
+                    });
+                }
+                IOSingleton.IOInstance.emit('invitation-request-response', from, to , accept, invitationId);
             })
+
 
             socket.on('connection-request-response', async (userId, toUserId, accept, invitationId) => {
                 if (accept) {
