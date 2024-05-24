@@ -65,6 +65,17 @@ class IOSingleton {
                 IOSingleton.IOInstance.emit('send-connect-request', from, to);
             });
 
+            socket.on('send-invitation-request', async (from, to, roomId) => {
+                const newInvitation = new Invitation({
+                    status: 'PENDING',
+                    from: from,
+                    to: to,
+                    room: roomId,
+                })
+                await newInvitation.save();
+                IOSingleton.IOInstance.emit('send-connect-request', from, to);
+            })
+
             socket.on('connection-request-response', async (userId, toUserId, accept, invitationId) => {
                 if (accept) {
                     const invitation = await Invitation.findByIdAndUpdate(invitationId, {
